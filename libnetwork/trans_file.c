@@ -1,20 +1,63 @@
 #include "libnetwork.h"
 
-int					send_file(char **path, int socket)
+int					is_dir(char *path)
+{
+	int				is_dir;
+
+	is_dir = 0;
+	if (chdir(path) != -1)
+	{
+		chdir("..");
+		is_dir = 1;
+	}
+	return (is_dir);
+}
+
+int					send_dir(char **path, int socket)
+{
+	char			*tmp;
+	DIR				*d;
+	struct dirent	*s;
+	char			*tmp_path[3];
+	char			buff[1024];
+
+	(void)path;
+	send(socket, "dir", 4, 0);
+	recv(socket, &tmp, 1, 0);
+	d = opendir(path[1]);
+	tmp_path[0] = ft_strdup(path[0]);
+	tmp_path[2] = NULL;
+	while ((s = readdir(d)))
+	{
+		tmp_path[1] = ft_strdup(s->d_name);
+		ft_putendl(s->d_name);
+//		send_file(tmp_path, socket);
+		send(socket, s->d_name, s->d_namlen, 0);
+		free(tmp_path[1]);
+		recv(socket, buff, 10, 0);
+	}
+	send(socket,"", 1, 0);
+	return (1);
+}
+
+int					send_unique_file(char **path, int socket)
 {
 	char			buff[255];
 	char			tmp;
 	int				fd;
 	int				ret;
 	struct stat		st;
+	char			*size;
 
 	if (path[1])
 	{
 		if ((fd = open(path[1], O_RDONLY)) != -1)
 		{
 			fstat(fd, &st);
-			char *size = ft_itoa(st.st_size);
+			size = ft_itoa(st.st_size);
 			ft_putendl(size);
+			send(socket, "file", 5, 0);
+			recv(socket, &tmp, 1, 0);
 			send(socket, size, ft_strlen(size), 0);
 			recv(socket, &tmp, 1, 0);
 			while ((ret = read(fd, buff, 255)) > 0)
@@ -29,112 +72,11 @@ int					send_file(char **path, int socket)
 	return (0);
 }
 
-static char			*get_path(char *s)
+int					send_file(char **path, int socket)
 {
-	char			*ret;
-
-	if (ft_strchr(s, '/'))
-	{
-		ret = ft_strrchr(s, '/');
-		ret++;
-	}
+	if (!is_dir(path[1]))
+		return (send_unique_file(path, socket));
 	else
-		ret = s;
-	return (ret);
-}
-
-static int			choose_stuff(char *path, int fd)
-{
-	char			*line;
-
-	ft_putendl("\033[0;1mExisting file :\033[0m");
-	ft_putstr("(A)bort, (R)ename, (O)verwrite ? ");
-	get_next_line(0, &line);
-	if (line[0] == 'R')
-	{
-		ft_putstr("New name : ");
-		get_next_line(0, &line);
-		close(fd);
-		return (create_file(line));
-	}
-	else if (line[0] == 'O')
-	{
-		close(fd);
-		fd = open(path, O_TRUNC | O_WRONLY);
-		return (fd);
-	}
-	else
-		close(fd);
-	return (0);
-}
-
-int					create_file(char *path)
-{
-	char			*good_path;
-	int				fd;
-
-	good_path = get_path(path);
-	if ((fd = open(good_path, O_RDONLY)) != -1)
-		return (choose_stuff(good_path, fd));
-	else
-	{
-		fd = open(good_path, O_CREAT | O_WRONLY);
-		return (fd);
-	}
-	return (0);
-}
-
-
-static int			read_file(int socket, int fd, int size)
-{
-	char			buff[1024];
-	int				ret;
-
-	if (fd == 0)
-		send(socket, "", 1, 0);
-	while (size > 255)
-	{
-		ret = recv(socket, buff, 1023, 0);
-		if (fd > 0)
-			write(fd, buff, ret);
-		size -= ret;
-		send(socket, "", 1, 0);
-	}
-	return (0);
-}
-
-int					receive_file(char **path, int socket)
-{
-	int				ret;
-	int				fd;
-	char			buff[1024];
-	char			*good_path;
-	int				size;
-
-	ft_bzero(buff, 1023);
-	if ((ret = recv(socket, buff, 1023, 0)) == 0)
-		return (0);
-	size = ft_atoi(buff);
-	send(socket, "", 1, 0);
-	ret = recv(socket, buff, 1023, 0);
-	fd = 0;
-	if (buff[0] != '\0')
-	{
-		buff[ret] = '\0';
-		good_path = path[1];
-		fd = create_file(good_path);
-		if (fd <= 0)
-			return (read_file(socket, fd, size));
-		write(fd, buff, ft_strlen(buff));
-		send(socket, "", 1, 0);
-	}
-	read_file(socket, fd, size);
-	if (fd > 0)
-	{
-		ft_putendl("SUCCESS");
-		close(fd);
-	}
-	else
-		ft_putendl("ERROR");
+		return (send_dir(path, socket));
 	return (0);
 }

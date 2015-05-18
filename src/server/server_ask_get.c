@@ -6,13 +6,24 @@
 /*   By: ghilbert <ghilbert@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/05/11 17:38:07 by tlepeche          #+#    #+#             */
-/*   Updated: 2015/05/16 19:22:44 by vpailhe          ###   ########.fr       */
+/*   Updated: 2015/05/17 22:03:18 by vpailhe          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.h"
 
-int ask_get(char **av, int fd)
+void			is_dir(char *path)
+{
+	if (!chdir(path))
+	{
+		ft_putstr("DOSSIER");
+		chdir("..");
+	}
+	else
+		ft_putstr("WRONG REQUEST");
+}
+
+int				 ask_get(char **av, int fd)
 {
 	char		buff[255];
 	char		tmp;
@@ -22,8 +33,7 @@ int ask_get(char **av, int fd)
 
 	if (av[1])
 	{
-		tar_fd = open(av[1], O_RDONLY);
-		if (tar_fd != -1)
+		if ((tar_fd = open(av[1], O_RDONLY)) != -1)
 		{
 			fstat(tar_fd, &st);
 			while ((ret = read(tar_fd, buff, 255)) > 0)
@@ -35,6 +45,8 @@ int ask_get(char **av, int fd)
 			close(tar_fd);
 			return (1);
 		}
+//		else
+//			is_dir(av[1]);
 		send(fd, "\0", 1, 0);
 		return (0);
 	}

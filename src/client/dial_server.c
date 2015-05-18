@@ -1,6 +1,5 @@
 #include "client.h"
 
-
 void	dial_server(int sock, char *line)
 {
 	t_fct	*list;
