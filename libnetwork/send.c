@@ -78,15 +78,18 @@ int					receive_dir(char **path, int socket)
 	char	buff[1024];
 	int		ret;
 
-//	socket+=42;
 	mkdir(path[1], 0777);
 	chdir(path[1]);
 	while(42)
 	{
+		ft_putendl("un");
 		ret = recv(socket, buff, 1023, 0);
+		ft_putendl("deux");
+		send(socket, "ok", 3, 0);
 		buff[ret] = '\0';
 		if (ret == 1 && buff[0] == '\0')
 			break;
+		mkdir(buff, 0777);
 		ft_putendl(buff);
 		send(socket, "", 1, 0);
 	//	receive_file(path, socket);

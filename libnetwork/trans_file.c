@@ -32,7 +32,8 @@ int					send_dir(char **path, int socket)
 		tmp_path[1] = ft_strdup(s->d_name);
 		ft_putendl(s->d_name);
 //		send_file(tmp_path, socket);
-		send(socket, s->d_name, s->d_namlen, 0);
+//		send(socket, s, sizeof(s), 0);
+		send(socket, tmp_path[1], s->d_namlen, 0);
 		free(tmp_path[1]);
 		recv(socket, buff, 10, 0);
 	}
